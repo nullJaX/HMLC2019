@@ -427,7 +427,6 @@ pip-selfcheck.json
 *.avi
 *.flv
 *.mov
-*.mp4
 *.mpg
 *.rm
 *.swf
