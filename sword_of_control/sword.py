@@ -4,20 +4,20 @@ import json
 import cv2
 import numpy as np
 
+
 def compare(last_frame, frame, last_position, params):
     # TODO: Implement
     return last_position
+
 
 def preprocess(frame, params):
     # TODO: Implement
     return frame
 
+
 def mp4_read(video_file_path):
     cap = cv2.VideoCapture(video_file_path)
     frame_count = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    buffer = np.empty((frame_height, frame_width, 3), np.dtype('uint8'))
     fc = 0
     ret = True
     while fc < frame_count and ret:
@@ -25,6 +25,7 @@ def mp4_read(video_file_path):
         fc += 1
         yield buffer
     cap.release()
+
 
 def where_da_sword(video_file_path, first_frame_position, params):
     last_position = first_frame_position
@@ -34,7 +35,8 @@ def where_da_sword(video_file_path, first_frame_position, params):
             last_frame = preprocess(frame, params)
         else:
             frame = preprocess(frame, params)
-            last_position = map(int, compare(last_frame, frame, last_position, params))
+            last_position = tuple(map(int, compare(last_frame, frame,
+                                                   last_position, params)))
             last_frame = frame
         x_a, y_a, x_b, y_b = last_position
         height, width = last_frame.shape[:2]
@@ -43,14 +45,16 @@ def where_da_sword(video_file_path, first_frame_position, params):
         y_a = y_a if 0 <= y_a < height else -1
         y_b = y_b if 0 <= y_b < height else -1
         yield x_a, y_a, x_b, y_b
-        
+
 
 if __name__ == "__main__":
     video_file_path = sys.argv[1]
-    first_frame_position = map(int, str(sys.argv[2]).split(";"))
-    with open("config", "r") as f:
-        params = dict(json.load(f))
-    for x_a, y_a, x_b, y_b in where_da_sword(video_file_path, first_frame_position, params):
+    first_frame_position = tuple(map(int, sys.argv[2].split(";")))
+    # with open("config", "r") as f:
+    # params = dict(json.load(f))
+    params = None
+    for x_a, y_a, x_b, y_b in where_da_sword(video_file_path,
+                                             first_frame_position, params):
         if x_a < 0 or y_a < 0:
             x_a = "#"
             y_a = "#"
