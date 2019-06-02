@@ -28,7 +28,10 @@ def compare(last_frame, frame, last_position, params):
 
     # Detect edges
     canny = cv2.Canny(frame_diff, params["canny_threshold1"], params["canny_threshold2"])
-    lines = cv2.HoughLinesP(canny, 1, np.pi / 180, 30, minLineLength=70, maxLineGap=5)
+    lines = cv2.HoughLinesP(canny, params["hough_rho"], np.pi / 180,
+                            params["hough_threshold"],
+                            minLineLength=params["hough_minLineLength"],
+                            maxLineGap=params["hough_maxLineGap"])
     # cv2.imshow("CannyEdges", canny)
 
     # Determine new points
