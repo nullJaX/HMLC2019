@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-/usr/bin/python3 test.py $1 $2
+/usr/bin/python3 val.py $1 $2

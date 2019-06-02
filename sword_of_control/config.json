@@ -1,5 +1,5 @@
 {
-  "blur_kernel_size": 5,
-  "canny_threshold1": 75,
+  "blur_kernel_size": 7,
+  "canny_threshold1": 60,
   "canny_threshold2": 150
 }

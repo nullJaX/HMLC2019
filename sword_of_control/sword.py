@@ -5,15 +5,42 @@ import cv2
 import numpy as np
 
 
+def distance(last, current):
+    cxa, cya, cxb, cyb = current
+    cxc = int(np.round((cxa + cxb) / 2))
+    cyc = int(np.round((cya + cyb) / 2))
+    xa, ya, xb, yb, xc, yc = last
+    dist_a = np.sqrt((xa + cxa) ** 2 + (ya + cya) ** 2)
+    dist_b = np.sqrt((xb + cxb) ** 2 + (yb + cyb) ** 2)
+    dist_c = np.sqrt((xc + cxc) ** 2 + (yc + cyc) ** 2)
+    return (dist_a + dist_b + dist_c) / 3
+
+
 def compare(last_frame, frame, last_position, params):
+    # difference between frames
     frame_diff = cv2.absdiff(frame, last_frame)
+
+    # Limit Region Of Interest by creating circle of radius equal to longer dimension delta
+    # radius = max(last_position[3]-last_position[1], last_position[2]-last_position[0])
+    # mask = np.zeros(frame_diff.shape, dtype=np.uint8)
+    # cv2.circle(mask, last_position[-2:], radius, (255, 255, 255), -1, 8, 0)
+    # frame_diff = frame_diff & mask
+
+    # Detect edges
     canny = cv2.Canny(frame_diff, params["canny_threshold1"], params["canny_threshold2"])
-    lines = cv2.HoughLinesP(canny, 1, np.pi/180, 70, minLineLength=100, maxLineGap=5)
+    lines = cv2.HoughLinesP(canny, 1, np.pi / 180, 30, minLineLength=70, maxLineGap=5)
+    # cv2.imshow("CannyEdges", canny)
+
+    # Determine new points
     if lines is not None:
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            cv2.line(frame, (x1, y1), (x2, y2), (0, 255, 0), 5)
-    return last_position
+        distances = [distance(last_position, line[0]) for line in lines]
+        index = distances.index(min(distances))
+        xa, ya, xb, yb = lines[index][0]
+        xc = int(np.round((xa + xb) / 2))
+        yc = int(np.round((ya + yb) / 2))
+    else:
+        xa, ya, xb, yb, xc, yc = last_position
+    return xa, ya, xb, yb, xc, yc
 
 
 def preprocess(frame, params):
@@ -35,29 +62,30 @@ def mp4_read(video_file_path):
 
 
 def where_da_sword(video_file_path, first_frame_position, params):
-    last_position = first_frame_position
+    x_c = int(np.round(sum(first_frame_position[0::2]) / 2))
+    y_c = int(np.round(sum(first_frame_position[1::2]) / 2))
+    last_position = (*first_frame_position, x_c, y_c)
     last_frame = None
     for i, frame in enumerate(mp4_read(video_file_path)):
         if i == 0:
             last_frame = preprocess(frame, params)
         else:
             frame = preprocess(frame, params)
-            last_position = tuple(map(int, compare(last_frame, frame,
-                                                   last_position, params)))
+            last_position = tuple(map(int, compare(last_frame, frame, last_position, params)))
             last_frame = frame.copy()
-        x_a, y_a, x_b, y_b = last_position
+        x_a, y_a, x_b, y_b, _, _ = last_position
         height, width = last_frame.shape[:2]
         x_a = x_a if 0 <= x_a < width else -1
         x_b = x_b if 0 <= x_b < width else -1
         y_a = y_a if 0 <= y_a < height else -1
         y_b = y_b if 0 <= y_b < height else -1
-        # display = cv2.cvtColor(last_frame, cv2.COLOR_GRAY2RGB)
-        # if all([i >= 0 for i in [x_a, x_b, y_a, y_b]]):
-        #     cv2.line(display, (x_a, y_a), (x_b, y_b), (0, 255, 0), 3)
-        # cv2.circle(display, (x_a, y_a), 5, (255, 0, 0), -1)
-        # cv2.circle(display, (x_b, y_b), 5, (0, 0, 255), -1)
-        # cv2.imshow('Debug display', display)
-        # cv2.waitKey(30)
+        display = cv2.cvtColor(last_frame, cv2.COLOR_GRAY2RGB)
+        if all([i >= 0 for i in [x_a, x_b, y_a, y_b]]):
+            cv2.line(display, (x_a, y_a), (x_b, y_b), (0, 255, 0), 3)
+        cv2.circle(display, (x_a, y_a), 5, (255, 0, 0), -1)
+        cv2.circle(display, (x_b, y_b), 5, (0, 0, 255), -1)
+        cv2.imshow('Debug display', display)
+        cv2.waitKey(30)
         yield x_a, y_a, x_b, y_b
 
 
