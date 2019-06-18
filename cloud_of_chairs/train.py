@@ -18,7 +18,6 @@ def init_callbacks():
 
 
 def load_data():
-    data = []
     for i in range(1, 6):
         X_file, Y_file = [], []
         with open("./testS/testS{0!s}.in".format(i)) as fin, open(
@@ -34,47 +33,46 @@ def load_data():
         X_file = numpy.array(X_file)
         Y_file = numpy.array(Y_file)
         data_file = numpy.concatenate((X_file, Y_file), axis=-1)
-        data.append(data_file)
-    return data
+        yield data_file
 
 
 def generator(data):
     while True:
-        batch_location = []
-        batch_color = []
-        batch_output = []
-        for i in range(BATCH_SIZE):
-            room = i % 5
-            r = numpy.random.randint(data[room].shape[0], size=N_SAMPLES)
-            d = data[room][r, :]
-            x_location = d[:, 0:3].tolist()
-            x_color = d[:, 3:6].tolist()
-            y = d[:, 6].tolist()
+        random.shuffle(data)
+        for room in data:
+            yield ([room[:, :, :, :, 0:3]], [room[:, :, :, :, 3:]])
 
-            batch_location.append(x_location)
-            batch_color.append(x_color)
-            batch_output.append(y)
-        batch_location = numpy.array(batch_location)
-        batch_color = numpy.array(batch_color)
-        batch_output = numpy.array(batch_output)
-        batch_output = numpy.expand_dims(batch_output, axis=-1)
-        yield ([batch_color], [batch_output])
+
+def create_grid(data):
+    rooms = []
+    for room in data:
+        n_bins = 75
+        x_min, x_max = numpy.min(room[:, 0]), numpy.max(room[:, 0])
+        y_min, y_max = numpy.min(room[:, 1]), numpy.max(room[:, 1])
+        z_min, z_max = numpy.min(room[:, 2]), numpy.max(room[:, 2])
+        room[:, 0] = numpy.digitize(room[:, 0], numpy.linspace(x_min, x_max, n_bins, dtype=numpy.int)) -1
+        room[:, 1] = numpy.digitize(room[:, 1], numpy.linspace(y_min, y_max, n_bins, dtype=numpy.int)) -1
+        room[:, 2] = numpy.digitize(room[:, 2], numpy.linspace(z_min, z_max, n_bins, dtype=numpy.int)) -1
+        room_grid = numpy.zeros((n_bins, n_bins, n_bins, 4))
+        for item in room[:]:
+            room_grid[int(item[0]), int(item[1]), int(item[2]), :] = item[3:]
+        rooms.append(numpy.expand_dims(room_grid, axis=0))
+    return rooms
 
 
 if __name__ == '__main__':
-    callbacks = init_callbacks()
     data = load_data()
+    data = create_grid(data)
+    callbacks = init_callbacks()
     model = load_model(RAW_MODEL)
     # model = create_model()
     model.fit_generator(generator(data),
-                        steps_per_epoch=int(numpy.ceil(
-                            ((1 - VALIDATION_SPLIT) * ITEMS) / BATCH_SIZE)),
+                        steps_per_epoch=4,
                         epochs=EPOCHS,
                         verbose=1,
                         callbacks=callbacks,
                         validation_data=generator(data),
-                        validation_steps=int(numpy.ceil(
-                            (VALIDATION_SPLIT * ITEMS) / BATCH_SIZE)),
+                        validation_steps=1,
                         max_queue_size=10,
                         shuffle=True,
                         initial_epoch=0)

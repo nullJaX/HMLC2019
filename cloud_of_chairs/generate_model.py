@@ -1,97 +1,22 @@
 #!/usr/bin/env python3
 from keras import Model, Input
-from keras.layers import Reshape, Conv2D, MaxPooling2D, Dense, Concatenate, \
-    Dot, Dropout, Softmax
-from keras.optimizers import Adam, SGD
+from keras.layers import Dense, Softmax, Conv3D
+from keras.optimizers import SGD
 from keras.utils import plot_model
 
-from config import N_SAMPLES, INPUT_FEATURES, OUTPUT_FEATURES, RAW_MODEL
-
-
-def input_transformation(inputs, K=3):
-    r0_0 = Reshape((N_SAMPLES, K, 1))(inputs)
-    conv0_0 = Conv2D(16, (1, K), strides=(1, 1), padding="valid")(r0_0)
-    conv0_1 = Conv2D(32, (1, 1), strides=(1, 1), padding="valid")(conv0_0)
-    conv0_2 = Conv2D(256, (1, 1), strides=(1, 1), padding="valid")(conv0_1)
-    max0_0 = MaxPooling2D(pool_size=(N_SAMPLES, 1), padding="valid")(conv0_2)
-    r0_1 = Reshape((-1,))(max0_0)
-    d0_0 = Dense(128)(r0_1)
-    d0_1 = Dense(64)(d0_0)
-    d0_2 = Dense(K * K)(d0_1)
-    r0_2 = Reshape([K, K])(d0_2)
-    return r0_2
-
-
-def feature_transformation(inputs, K=3):
-    r0_0 = Reshape((N_SAMPLES, 3, 1))(inputs)
-    conv2_0 = Conv2D(16, (1, 1), strides=(1, 1), padding="valid")(r0_0)
-    conv2_1 = Conv2D(32, (1, 1), strides=(1, 1), padding="valid")(conv2_0)
-    conv2_2 = Conv2D(256, (1, 1), strides=(1, 1), padding="valid")(conv2_1)
-    max2 = MaxPooling2D((N_SAMPLES, 1), padding="valid")(conv2_2)
-    r2_0 = Reshape((-1,))(max2)
-    d2_0 = Dense(128)(r2_0)
-    d2_1 = Dense(64)(d2_0)
-    d2_2 = Dense(K * K)(d2_1)
-    r2_1 = Reshape([K, K])(d2_2)
-    return r2_1
-
+from config import INPUT_SHAPE, RAW_MODEL, OUTPUT_FEATURES
 
 if __name__ == '__main__':
-    location = Input(shape=(N_SAMPLES, INPUT_FEATURES[0]), name="Location")
-    color = Input(shape=(N_SAMPLES, INPUT_FEATURES[1]), name="Color")
+    grid = Input(shape=INPUT_SHAPE)
+    conv0 = Conv3D(8, (3, 3, 3), strides=(1, 1, 1), padding="same")(grid)
+    conv3 = Conv3D(64, (3, 3, 3), strides=(1, 1, 1), padding="same")(conv0)
 
-    r0_l = Reshape((N_SAMPLES, INPUT_FEATURES[0], 1))(location)
-    r0_c = Reshape((N_SAMPLES, INPUT_FEATURES[1], 1))(color)
-    conv0_l = Conv2D(16, (1, INPUT_FEATURES[0]), strides=(1, 1), padding="valid")(r0_l)
-    conv0_c = Conv2D(8, (1, INPUT_FEATURES[1]), strides=(1, 1), padding="valid")(r0_c)
-    conv1_l = Conv2D(32, (1, 1), strides=(1, 1), padding="valid")(conv0_l)
-    conv1_c = Conv2D(32, (1, 1), strides=(1, 1), padding="valid")(conv0_c)
-    max0_l = MaxPooling2D(pool_size=(N_SAMPLES, 1), padding="valid")(conv1_l)
-    r1_c = Reshape((N_SAMPLES, -1))(conv1_c)
-    d0_c = Dense(512)(r1_c)
-    d1_c = Dense(128)(d0_c)
-    d2_c = Dense(32)(d1_c)
+    d0 = Dense(32)(conv3)
+    d1 = Dense(8)(d0)
+    d2 = Dense(OUTPUT_FEATURES)(d1)
+    soft = Softmax(axis=-1)(d2)
 
-    r1_l = Reshape((-1,))(max0_l)
-    d0_0 = Dense(128)(r1_l)
-    d0_1 = Dense(64)(d0_0)
-    d0_2 = Dense(INPUT_FEATURES[0]**2)(d0_1)
-    r2_l = Reshape((INPUT_FEATURES[0], INPUT_FEATURES[0]))(d0_2)
-    loc_in = Dot((-1))([location, r2_l])
-    dd = Dense(256)(loc_in)
-    dd1 = Dense(256)(location)
-    concat = Concatenate(axis=-1)([dd1, d2_c])
-
-    ddd = Dense(512)(d2_c)
-    ddd1 = Dense(64)(ddd)
-    ddd2 = Dense(1)(ddd1)
-    soft = Softmax()(ddd2)
-    # channel_mix = Concatenate(axis=-1)([location, color])
-    #
-    # tr0 = input_transformation(channel_mix, K=sum(INPUT_FEATURES))
-    # mul0 = Dot((-1))([channel_mix, tr0])
-    # r1_0 = Reshape((N_SAMPLES, sum(INPUT_FEATURES), 1))(mul0)
-    # conv1_0 = Conv2D(16, (1, sum(INPUT_FEATURES)), strides=(1, 1), padding="valid")(r1_0)
-    # conv1_1 = Conv2D(16, (1, 1), strides=(1, 1), padding="valid")(conv1_0)
-    #
-    # ft0 = feature_transformation(conv1_1, K=16)
-    # r2 = Reshape((N_SAMPLES, 16))(conv1_1)
-    # mul1 = Dot((-1))([r2, ft0])
-    # r1_1 = Reshape((N_SAMPLES, 1, 16))(mul1)
-    #
-    # conv1_2 = Conv2D(16, (1, 1), strides=(1, 1), padding="valid")(r1_1)
-    # conv1_3 = Conv2D(32, (1, 1), strides=(1, 1), padding="valid")(conv1_2)
-    # conv1_4 = Conv2D(256, (1, 1), strides=(1, 1), padding="valid")(conv1_3)
-    #
-    # max1 = MaxPooling2D((1, 1), padding="valid")(conv1_4)
-    # r3 = Reshape((N_SAMPLES, -1))(max1)
-    # d1_0 = Dense(128)(r3)
-    # drop0 = Dropout(0.3)(d1_0)
-    # d1_1 = Dense(64)(drop0)
-    # drop1 = Dropout(0.3)(d1_1)
-    # d1_2 = Dense(OUTPUT_FEATURES)(drop1)
-
-    model = Model(inputs=[location, color], outputs=[soft])
+    model = Model(inputs=[grid], outputs=[soft])
 
     model.summary()
 
@@ -99,6 +24,6 @@ if __name__ == '__main__':
     plot_model(model, show_shapes=True)
 
     # OPTIMIZER
-    sgd = SGD(lr=0.1, momentum=0.9, decay=0.0005)
+    sgd = SGD(lr=0.00001, momentum=0.9, decay=0.0005)
     model.compile(sgd, loss="binary_crossentropy", metrics=["acc"])
     model.save(RAW_MODEL)
