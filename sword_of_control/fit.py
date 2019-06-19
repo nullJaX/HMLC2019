@@ -9,27 +9,28 @@ from tqdm import tqdm, tnrange
 from sword import morphology_map, where_da_sword
 
 
-def iou(expected, output):
-    xA = max(expected[0], output[0])
-    yA = max(expected[1], output[1])
-    xB = min(expected[2], output[2])
-    yB = min(expected[3], output[3])
+def iou(a, b, epsilon=1e-5):
+    # COORDINATES OF THE INTERSECTION BOX
+    x1 = max(a[0], b[0])
+    y1 = max(a[1], b[1])
+    x2 = min(a[2], b[2])
+    y2 = min(a[3], b[3])
 
-    # compute the area of intersection rectangle
-    interArea = max(0, xB - xA + 1) * max(0, yB - yA + 1)
+    # AREA OF OVERLAP - Area where the boxes intersect
+    width = (x2 - x1)
+    height = (y2 - y1)
+    # handle case where there is NO overlap
+    if (width < 0) or (height < 0):
+        return 0.0
+    area_overlap = width * height
 
-    # compute the area of both the prediction and ground-truth
-    # rectangles
-    expectedArea = (expected[2] - expected[0] + 1) * (
-            expected[3] - expected[1] + 1)
-    outputArea = (output[2] - output[0] + 1) * (output[3] - output[1] + 1)
+    # COMBINED AREA
+    area_a = (a[2] - a[0]) * (a[3] - a[1])
+    area_b = (b[2] - b[0]) * (b[3] - b[1])
+    area_combined = area_a + area_b - area_overlap
 
-    # compute the intersection over union by taking the intersection
-    # area and dividing it by the sum of prediction + ground-truth
-    # areas - the interesection area
-    iou = interArea / (float(expectedArea + outputArea - interArea) + 1.0)
-
-    # return the intersection over union value
+    # RATIO OF AREA OF OVERLAP OVER COMBINED AREA
+    iou = area_overlap / (area_combined + epsilon)
     return iou
 
 
@@ -68,16 +69,16 @@ if __name__ == '__main__':
     best_iou = sum(best_iou) / len(best_iou)
     print("Best IoU: {0!s}".format(best_iou))
 
-    blur_kernel_size = [i for i in range(3, 9, 2)]
-    canny_threshold1 = [i for i in range(30, 100, 15)]
-    canny_threshold2 = [i for i in range(140, 250, 20)]
-    hough_rho = [i / 100 for i in range(0, 120, 30)]
-    hough_threshold = [i for i in range(0, 100, 15)]
-    hough_minLineLength = [i for i in range(20, 100, 20)]
-    hough_maxLineGap = [i for i in range(0, 24, 3)]
+    blur_kernel_size = [i for i in range(3, 13, 2)]
+    canny_threshold1 = [i for i in range(10, 200, 5)]
+    canny_threshold2 = [i for i in range(120, 350, 10)]
+    hough_rho = [i / 100 for i in range(0, 200, 10)]
+    hough_threshold = [i for i in range(10, 100, 5)]
+    hough_minLineLength = [i for i in range(20, 300, 10)]
+    hough_maxLineGap = [i for i in range(2, 50, 2)]
     morphology_method = [i for i in morphology_map.keys()]
-    morphology_kernel = [i for i in range(3, 9, 2)]
-    morphology_iter = [i for i in range(0, 4, 1)]
+    morphology_kernel = [i for i in range(3, 11, 2)]
+    morphology_iter = [i for i in range(0, 5, 1)]
 
     for _ in tqdm(range(10000)):
         params = {
@@ -93,6 +94,10 @@ if __name__ == '__main__':
             "morphology_kernel": random.choice(morphology_kernel),
             "morphology_iter": random.choice(morphology_iter)
         }
+        print(params["hough_maxLineGap"])
+        print(params["hough_minLineLength"])
+        print(params["hough_rho"])
+        print(params["hough_threshold"])
         threads = []
         iou_for_params = []
         for j in range(1, 9, 1):

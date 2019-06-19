@@ -1,13 +1,1 @@
-{
-  "deque_maxlen": 500000,
-  "blur_kernel_size": 7,
-  "canny_threshold1": 60,
-  "canny_threshold2": 150,
-  "hough_rho": 1,
-  "hough_threshold": 30,
-  "hough_minLineLength": 70,
-  "hough_maxLineGap": 5,
-  "morphology_method": "close",
-  "morphology_kernel": 5,
-  "morphology_iter": 1
-}
+{"deque_maxlen": 500000, "blur_kernel_size": 3, "canny_threshold1": 145, "canny_threshold2": 220, "hough_rho": 1.7, "hough_threshold": 70, "hough_minLineLength": 20, "hough_maxLineGap": 34, "morphology_method": "erode", "morphology_kernel": 5, "morphology_iter": 0}
