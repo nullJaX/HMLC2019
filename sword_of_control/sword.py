@@ -8,15 +8,8 @@ import numpy as np
 
 morphology_map = {"dilate": cv2.MORPH_DILATE,
                   "close": cv2.MORPH_CLOSE,
-                  "blackhat": cv2.MORPH_BLACKHAT,
-                  "cross": cv2.MORPH_CROSS,
-                  "ellipse": cv2.MORPH_ELLIPSE,
                   "erode": cv2.MORPH_ERODE,
-                  "gradient": cv2.MORPH_GRADIENT,
-                  "hitmiss": cv2.MORPH_HITMISS,
-                  "open": cv2.MORPH_OPEN,
-                  "rect": cv2.MORPH_RECT,
-                  "tophat": cv2.MORPH_TOPHAT}
+                  "open": cv2.MORPH_OPEN}
 
 
 def distance(last, current):

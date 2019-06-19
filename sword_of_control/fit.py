@@ -4,7 +4,7 @@ import json
 import random
 from threading import Thread
 
-from tqdm import tqdm
+from tqdm import tqdm, tnrange
 
 from sword import morphology_map, where_da_sword
 
@@ -20,7 +20,8 @@ def iou(expected, output):
 
     # compute the area of both the prediction and ground-truth
     # rectangles
-    expectedArea = (expected[2] - expected[0] + 1) * (expected[3] - expected[1] + 1)
+    expectedArea = (expected[2] - expected[0] + 1) * (
+            expected[3] - expected[1] + 1)
     outputArea = (output[2] - output[0] + 1) * (output[3] - output[1] + 1)
 
     # compute the intersection over union by taking the intersection
@@ -47,7 +48,7 @@ def load_data(i):
 def validate(j, params, iou_for_params):
     expected = load_data(j)
     iou_for_file = []
-    for i, frame in enumerate(where_da_sword("./train/in{0!s}.mp4".format(j), expected[0], best_params)):
+    for i, frame in enumerate(where_da_sword("./train/in{0!s}.mp4".format(j), expected[0], params)):
         iou_for_file.append(iou(expected[i], frame))
     iou_for_params.append(sum(iou_for_file) / len(iou_for_file))
 
@@ -56,30 +57,31 @@ if __name__ == '__main__':
     with open("config.json", "r") as f:
         best_params = dict(json.load(f))
     best_iou = []
-    for j in tqdm(range(1, 9, 1)):
-        expected = load_data(j)
-        iou_for_file = []
-        for i, frame in enumerate(where_da_sword("./train/in{0!s}.mp4".format(j), expected[0], best_params)):
-            iou_for_file.append(iou(expected[i], frame))
-        best_iou.append(sum(iou_for_file) / len(iou_for_file))
+    threads = []
+    for j in range(1, 9, 1):
+        threads.append(
+            Thread(target=validate, args=(j, best_params, best_iou)))
+    for t in threads:
+        t.start()
+    for t in tqdm(threads):
+        t.join()
     best_iou = sum(best_iou) / len(best_iou)
     print("Best IoU: {0!s}".format(best_iou))
 
-    deque_maxlen = [i for i in range(1, 500, 2)]
-    blur_kernel_size = [i for i in range(1, 15, 2)]
-    canny_threshold1 = [i for i in range(0, 300, 1)]
-    canny_threshold2 = [i for i in range(0, 300, 1)]
-    hough_rho = [i/10 for i in range(0, 100, 1)]
-    hough_threshold = [i for i in range(0, 500, 2)]
-    hough_minLineLength = [i for i in range(0, 200, 1)]
-    hough_maxLineGap = [i for i in range(0, 500, 1)]
+    blur_kernel_size = [i for i in range(3, 9, 2)]
+    canny_threshold1 = [i for i in range(30, 100, 15)]
+    canny_threshold2 = [i for i in range(140, 250, 20)]
+    hough_rho = [i / 100 for i in range(0, 120, 30)]
+    hough_threshold = [i for i in range(0, 100, 15)]
+    hough_minLineLength = [i for i in range(20, 100, 20)]
+    hough_maxLineGap = [i for i in range(0, 24, 3)]
     morphology_method = [i for i in morphology_map.keys()]
-    morphology_kernel = [i for i in range(1, 21, 2)]
-    morphology_iter = [i for i in range(0, 10, 1)]
+    morphology_kernel = [i for i in range(3, 9, 2)]
+    morphology_iter = [i for i in range(0, 4, 1)]
 
-    for _ in tqdm(range(50000)):
+    for _ in tqdm(range(10000)):
         params = {
-            "deque_maxlen": random.choice(deque_maxlen),
+            "deque_maxlen": best_params["deque_maxlen"],
             "blur_kernel_size": random.choice(blur_kernel_size),
             "canny_threshold1": random.choice(canny_threshold1),
             "canny_threshold2": random.choice(canny_threshold2),
@@ -99,10 +101,14 @@ if __name__ == '__main__':
             t.start()
         for t in threads:
             t.join()
-        iou_for_params = sum(iou_for_params) / len(iou_for_params)
+        iou_for_params = sum(
+            iou_for_params) / len(
+            iou_for_params)
         if iou_for_params > best_iou:
             best_params = params
             best_iou = iou_for_params
-            print("Better IoU: {0!s}".format(best_iou))
-    with open("config.json", "w") as f:
-        json.dump(best_params, f)
+            print(
+                "Better IoU: {0!s}".format(
+                    best_iou))
+            with open("config.json", "w") as f:
+                json.dump(best_params, f)
