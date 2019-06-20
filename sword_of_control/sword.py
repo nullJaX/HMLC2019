@@ -34,7 +34,6 @@ def compare(last_frame, frame, last_positions, params):
         radius = max(abs(roi[3] - roi[1]), abs(roi[2] - roi[0]))
         cv2.circle(mask, roi[-2:], radius, (255, 255, 255), -1, 8, 0)
     frame_diff = frame_diff & mask
-    # cv2.imshow("CannyEdges", frame_diff)
 
     # Detect edges
     canny = cv2.Canny(frame_diff, params["canny_threshold1"], params["canny_threshold2"])
@@ -42,7 +41,6 @@ def compare(last_frame, frame, last_positions, params):
                             params["hough_threshold"],
                             minLineLength=params["hough_minLineLength"],
                             maxLineGap=params["hough_maxLineGap"])
-    # frame_diff = cv2.cvtColor(frame_diff, cv2.COLOR_GRAY2BGR)
     # cv2.imshow("CannyEdges", canny)
 
 

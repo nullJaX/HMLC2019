@@ -69,35 +69,35 @@ if __name__ == '__main__':
     best_iou = sum(best_iou) / len(best_iou)
     print("Best IoU: {0!s}".format(best_iou))
 
-    blur_kernel_size = [i for i in range(3, 13, 2)]
-    canny_threshold1 = [i for i in range(10, 200, 5)]
-    canny_threshold2 = [i for i in range(120, 350, 10)]
-    hough_rho = [i / 100 for i in range(0, 200, 10)]
-    hough_threshold = [i for i in range(10, 100, 5)]
-    hough_minLineLength = [i for i in range(20, 300, 10)]
-    hough_maxLineGap = [i for i in range(2, 50, 2)]
+    blur_kernel_size = [i for i in range(3, 6, 2)]
+    canny_threshold1 = [i for i in range(-1, 2, 1)]
+    canny_threshold2 = [i for i in range(-1, 2, 1)]
+    hough_rho = [i / 10000.0 for i in range(-100, 101, 10)]
+    hough_threshold = [i for i in range(-1, 2, 1)]
+    hough_minLineLength = [i for i in range(-1, 2, 1)]
+    hough_maxLineGap = [i for i in range(-1, 2, 1)]
     morphology_method = [i for i in morphology_map.keys()]
-    morphology_kernel = [i for i in range(3, 11, 2)]
-    morphology_iter = [i for i in range(0, 5, 1)]
+    morphology_kernel = [i for i in range(3, 8, 2)]
+    morphology_iter = [i for i in range(0, 3, 1)]
 
     for _ in tqdm(range(10000)):
         params = {
             "deque_maxlen": best_params["deque_maxlen"],
             "blur_kernel_size": random.choice(blur_kernel_size),
-            "canny_threshold1": random.choice(canny_threshold1),
-            "canny_threshold2": random.choice(canny_threshold2),
-            "hough_rho": random.choice(hough_rho),
-            "hough_threshold": random.choice(hough_threshold),
-            "hough_minLineLength": random.choice(hough_minLineLength),
-            "hough_maxLineGap": random.choice(hough_maxLineGap),
-            "morphology_method": random.choice(morphology_method),
+            "canny_threshold1": best_params["canny_threshold1"] + random.choice(canny_threshold1),
+            "canny_threshold2": best_params["canny_threshold2"] + random.choice(canny_threshold2),
+            "hough_rho": best_params["hough_rho"] + random.choice(hough_rho),
+            "hough_threshold": best_params["hough_threshold"] + random.choice(hough_threshold),
+            "hough_minLineLength": best_params["hough_minLineLength"] + random.choice(hough_minLineLength),
+            "hough_maxLineGap": best_params["hough_maxLineGap"] + random.choice(hough_maxLineGap),
+            "morphology_method": best_params["morphology_method"],
             "morphology_kernel": random.choice(morphology_kernel),
             "morphology_iter": random.choice(morphology_iter)
         }
-        print(params["hough_maxLineGap"])
-        print(params["hough_minLineLength"])
-        print(params["hough_rho"])
-        print(params["hough_threshold"])
+        # print(params["hough_maxLineGap"])
+        # print(params["hough_minLineLength"])
+        # print(params["hough_rho"])
+        # print(params["hough_threshold"])
         threads = []
         iou_for_params = []
         for j in range(1, 9, 1):
