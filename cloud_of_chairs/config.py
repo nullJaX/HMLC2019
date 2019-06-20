@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-EPOCHS = 15
+EPOCHS = 10000
 BATCH_SIZE = 32
 N_SAMPLES = 512
 ITEMS = 953511 / 1000
@@ -8,4 +8,4 @@ INPUT_FEATURES = (3, 3)
 OUTPUT_FEATURES = 1
 
 RAW_MODEL = "pointnet_raw.hdf5"
-OUTPUT_MODEL = "pointnet.hdf5"
+OUTPUT_MODEL = "model.hdf5"

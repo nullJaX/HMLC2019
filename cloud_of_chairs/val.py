@@ -42,7 +42,7 @@ if __name__ == '__main__':
     in_file = sys.argv[1]
     out_file = sys.argv[2]
     data, orig_len = load_data(in_file)
-    model = load_model(RAW_MODEL)
+    model = load_model(OUTPUT_MODEL)
     output = model.predict_generator(generator(data),
                                      steps=int(numpy.ceil(len(data) / (BATCH_SIZE*N_SAMPLES))),
                                      max_queue_size=10,
